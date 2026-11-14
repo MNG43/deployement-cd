@@ -1,0 +1,8 @@
+workflow-aggregator
+git
+credentials-binding
+plain-credentials
+timestamper
+ws-cleanup
+junit
+docker-workflow

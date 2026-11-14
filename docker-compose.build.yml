@@ -1,0 +1,16 @@
+# Surcharge locale, uniquement quand backend-ci et frontend-ci sont
+# des dossiers voisins de deployment-cd. Le pipeline CD ne l'utilise pas :
+# il tire les images déjà publiées sur Docker Hub.
+
+services:
+  backend-blue:
+    build:
+      context: ../backend-ci
+  backend-green:
+    build:
+      context: ../backend-ci
+  frontend:
+    build:
+      context: ../frontend-ci
+      args:
+        VITE_API_URL: ""
