@@ -73,7 +73,19 @@ function Invoke-Reload {
     & docker @compose up -d proxy frontend
     if ($LASTEXITCODE -ne 0) { throw "Démarrage du proxy impossible." }
     for ($i = 0; $i -lt 15; $i++) {
-        & docker @compose exec -T proxy nginx -s reload
+        & docker exec samafile-proxy mkdir -p /etc/nginx/active
+        if ($LASTEXITCODE -eq 0) {
+            & docker cp "nginx/nginx.conf" "samafile-proxy:/etc/nginx/nginx.conf"
+        }
+        if ($LASTEXITCODE -eq 0) {
+            & docker cp $upstreamFile "samafile-proxy:/etc/nginx/active/upstream.conf"
+        }
+        if ($LASTEXITCODE -eq 0) {
+            & docker exec samafile-proxy nginx -t
+        }
+        if ($LASTEXITCODE -eq 0) {
+            & docker exec samafile-proxy nginx -s reload
+        }
         if ($LASTEXITCODE -eq 0) { return }
         Start-Sleep -Seconds 2
     }

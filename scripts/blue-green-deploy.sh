@@ -89,7 +89,11 @@ reload_proxy() {
     "${COMPOSE[@]}" up -d proxy frontend
     local _
     for _ in $(seq 1 15); do
-        if "${COMPOSE[@]}" exec -T proxy nginx -s reload; then
+        if docker exec samafile-proxy mkdir -p /etc/nginx/active \
+            && docker cp nginx/nginx.conf samafile-proxy:/etc/nginx/nginx.conf \
+            && docker cp "$UPSTREAM_FILE" samafile-proxy:/etc/nginx/active/upstream.conf \
+            && docker exec samafile-proxy nginx -t \
+            && docker exec samafile-proxy nginx -s reload; then
             return 0
         fi
         sleep 2
