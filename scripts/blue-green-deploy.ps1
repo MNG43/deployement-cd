@@ -30,14 +30,6 @@ if ($current -ne "blue" -and $current -ne "green") {
 }
 $other = $(if ($current -eq "blue") { "green" } else { "blue" })
 
-$appPort = "8888"
-if (Test-Path ".env") {
-    $line = Select-String -Path ".env" -Pattern "^APP_PORT=" | Select-Object -Last 1
-    if ($line) {
-        $appPort = $line.Line.Split("=", 2)[1].Trim().Trim('"')
-    }
-}
-
 function Write-Upstream([string]$Color) {
     @"
 upstream samafile_api {
@@ -84,7 +76,7 @@ function Invoke-Reload {
             & docker exec samafile-proxy nginx -t
         }
         if ($LASTEXITCODE -eq 0) {
-            & docker exec samafile-proxy nginx -s reload
+            & docker kill --signal HUP samafile-proxy
         }
         if ($LASTEXITCODE -eq 0) { return }
         Start-Sleep -Seconds 2
@@ -93,19 +85,15 @@ function Invoke-Reload {
 }
 
 function Invoke-Smoke {
-    $url = "http://127.0.0.1:$appPort/health"
     for ($i = 0; $i -lt 15; $i++) {
-        try {
-            $body = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5
-            if ($body.Content -match '"status"') {
-                Write-Host "Santé OK : $url"
-                return
-            }
-        } catch {
-            Start-Sleep -Seconds 2
+        $body = & docker exec samafile-proxy wget -qO- http://127.0.0.1/health
+        if ($LASTEXITCODE -eq 0 -and "$body" -match '"status"') {
+            Write-Host "Contrôle proxy et API OK : /health"
+            return
         }
+        Start-Sleep -Seconds 2
     }
-    throw "Contrôle de santé échoué : $url"
+    throw "Contrôle de santé du proxy et de l'API échoué."
 }
 
 function Invoke-Pull([string]$Color) {

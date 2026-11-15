@@ -37,14 +37,6 @@ else
     OTHER=blue
 fi
 
-APP_PORT=8888
-if [[ -f .env ]]; then
-    found="$(grep -E '^APP_PORT=' .env | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true)"
-    if [[ -n "${found:-}" ]]; then
-        APP_PORT="$found"
-    fi
-fi
-
 write_upstream() {
     local color="$1"
     cat > "$UPSTREAM_FILE" <<EOF
@@ -93,7 +85,7 @@ reload_proxy() {
             && docker cp nginx/nginx.conf samafile-proxy:/etc/nginx/nginx.conf \
             && docker cp "$UPSTREAM_FILE" samafile-proxy:/etc/nginx/active/upstream.conf \
             && docker exec samafile-proxy nginx -t \
-            && docker exec samafile-proxy nginx -s reload; then
+            && docker kill --signal HUP samafile-proxy >/dev/null; then
             return 0
         fi
         sleep 2
@@ -103,11 +95,10 @@ reload_proxy() {
 }
 
 smoke() {
-    local url="http://127.0.0.1:${APP_PORT}/health"
     local _
     for _ in $(seq 1 15); do
-        if curl -fsS "$url" | grep -q '"status"'; then
-            echo "Santé OK : $url"
+        if docker exec samafile-proxy wget -qO- http://127.0.0.1/health | grep -q '"status"'; then
+            echo "Contrôle proxy et API OK : /health"
             return 0
         fi
         sleep 2
