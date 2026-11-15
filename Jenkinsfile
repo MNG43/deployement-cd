@@ -13,8 +13,8 @@ pipeline {
     }
 
     parameters {
-        string(name: 'BACKEND_TAG', defaultValue: 'latest', description: 'Tag Docker Hub du backend')
-        string(name: 'FRONTEND_TAG', defaultValue: 'latest', description: 'Tag Docker Hub du frontend')
+        string(name: 'BACKEND_TAG', defaultValue: '16', description: 'Tag publié Docker Hub du backend (à actualiser après une nouvelle publication)')
+        string(name: 'FRONTEND_TAG', defaultValue: '10', description: 'Tag publié Docker Hub du frontend (à actualiser après une nouvelle publication)')
         booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Revenir à la couleur précédente')
     }
 
