@@ -35,10 +35,25 @@ pipeline {
                         set -eu
                         umask 077
                         echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                        backend_tag="${BACKEND_TAG:-16}"
+                        frontend_tag="${FRONTEND_TAG:-10}"
+                        if [ "$backend_tag" = "latest" ] && ! docker manifest inspect "${DOCKERHUB_USER}/samafile-backend:latest" >/dev/null 2>&1; then
+                            echo "Tag backend:latest absent; utilisation du tag publié 16."
+                            backend_tag=16
+                        fi
+                        if [ "$frontend_tag" = "latest" ] && ! docker manifest inspect "${DOCKERHUB_USER}/samafile-frontend:latest" >/dev/null 2>&1; then
+                            echo "Tag frontend:latest absent; utilisation du tag publié 10."
+                            frontend_tag=10
+                        fi
+                        case "$backend_tag" in *[!A-Za-z0-9_.-]*|'') echo "Tag backend invalide." >&2; exit 1 ;; esac
+                        case "$frontend_tag" in *[!A-Za-z0-9_.-]*|'') echo "Tag frontend invalide." >&2; exit 1 ;; esac
+                        docker manifest inspect "${DOCKERHUB_USER}/samafile-backend:${backend_tag}" >/dev/null
+                        docker manifest inspect "${DOCKERHUB_USER}/samafile-frontend:${frontend_tag}" >/dev/null
+                        echo "Tags sélectionnés : backend=${backend_tag}, frontend=${frontend_tag}"
                         cat > .env <<EOF
 DOCKERHUB_USER=${DOCKERHUB_USER}
-BACKEND_TAG=${BACKEND_TAG}
-FRONTEND_TAG=${FRONTEND_TAG}
+BACKEND_TAG=${backend_tag}
+FRONTEND_TAG=${frontend_tag}
 APP_PORT=8888
 POSTGRES_USER=samafile
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
